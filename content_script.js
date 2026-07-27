@@ -144,11 +144,46 @@
     if (collecting) return;
     collecting = true;
     try {
+      const dedupeEnabled = await getBoolSetting('dedupe_results', true);
+      const qualityEnabled = await getBoolSetting('min_quality_filter', true);
+      
       if (isGoogle) {
-        const urls = await scanGoogle();
+        let urls = await scanGoogle();
+        
+        // Convert URLs to image objects for filtering
+        let images = urls.map(url => ({
+          url,
+          width: 0,
+          height: 0
+        }));
+        
+        // Apply quality filter if enabled
+        if (qualityEnabled) {
+          images = shared.filterImages(images, { minWidth: 100, minHeight: 100 });
+        }
+        
+        // Apply deduplication if enabled
+        if (dedupeEnabled) {
+          images = shared.deduplicateImages(images);
+        }
+        
+        urls = images.map(img => img.url);
+        
         try { await chrome.runtime.sendMessage({ type: 'save_urls', urls }); } catch {}
       } else {
-        const images = scanGeneric();
+        let images = scanGeneric();
+        
+        // Apply quality filter if enabled
+        if (qualityEnabled) {
+          images = images.filter(src => {
+            const img = document.querySelector(`img[src="${src}"]`);
+            if (!img) return true;
+            const w = img.naturalWidth || 0;
+            const h = img.naturalHeight || 0;
+            return w >= 100 && h >= 100;
+          });
+        }
+        
         if (images.length) {
           try {
             await chrome.runtime.sendMessage({ type: 'save_generic', pageUrl: location.href, images });
