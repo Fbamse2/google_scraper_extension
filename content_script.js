@@ -4,10 +4,21 @@
   if (window.__gslVaultInjected) return;
   window.__gslVaultInjected = true;
 
-  /* SELF-SUFFICIENT: uses shared.js */
+  /* SELF-SUFFICIENT: works even if shared.js isn't loaded first */
   const shared = globalThis.CollectorShared || {};
-  const IMGRES_PREFIX = shared.IMGRES_PREFIX;
-  const normalizeUrl = shared.normalizeUrl;
+  const IMGRES_PREFIX = shared.IMGRES_PREFIX || 'https://www.google.com/imgres?q=';
+  const normalizeUrl = shared.normalizeUrl || ((raw) => {
+    try {
+      const u = new URL(raw);
+      u.searchParams.delete('ved');
+      u.searchParams.delete('vet');
+      u.hash = '';
+      const params = [...u.searchParams.entries()].sort(([a], [b]) => a.localeCompare(b));
+      return `${u.origin}${u.pathname}?${new URLSearchParams(params).toString()}`;
+    } catch {
+      return raw;
+    }
+  });
 
   const isGoogle = location.hostname.includes('google');
 
@@ -144,47 +155,11 @@
     if (collecting) return;
     collecting = true;
     try {
-      const dedupeEnabled = await getBoolSetting('dedupe_results', true);
-      const qualityEnabled = await getBoolSetting('min_quality_filter', true);
-      
       if (isGoogle) {
-        let urls = await scanGoogle();
-        
-        // Convert URLs to image objects for filtering
-        let images = urls.map(url => ({
-          url,
-          width: 0,
-          height: 0
-        }));
-        
-        // Apply quality filter if enabled
-        if (qualityEnabled) {
-          images = shared.filterImages(images, { minWidth: 100, minHeight: 100 });
-        }
-        
-        // Apply deduplication if enabled
-        if (dedupeEnabled) {
-          images = shared.deduplicateImages(images);
-        }
-        
-        urls = images.map(img => img.url);
-        
+        const urls = await scanGoogle();
         try { await chrome.runtime.sendMessage({ type: 'save_urls', urls }); } catch {}
-        console.log('[content_script.js] save_urls:', { count: urls.length });
       } else {
-        let images = scanGeneric();
-        
-        // Apply quality filter if enabled
-        if (qualityEnabled) {
-          images = images.filter(src => {
-            const img = document.querySelector(`img[src="${src}"]`);
-            if (!img) return true;
-            const w = img.naturalWidth || 0;
-            const h = img.naturalHeight || 0;
-            return w >= 100 && h >= 100;
-          });
-        }
-        
+        const images = scanGeneric();
         if (images.length) {
           try {
             await chrome.runtime.sendMessage({ type: 'save_generic', pageUrl: location.href, images });
@@ -274,8 +249,6 @@
 
   /* ---------------- floating button + auto-capture ---------------- */
 
-  let hoverLoopInterval = null;
-
   function updateButton() {
     const btn = document.querySelector('.gsl-floating-btn');
     if (!btn) return;
@@ -288,28 +261,10 @@
     }
   }
 
-  function startHoverLoop() {
-    if (hoverLoopInterval) return;
-    hoverLoopInterval = setInterval(async () => {
-      if (isGoogle) {
-        await scanGoogle();
-      }
-    }, 300);
-  }
-
-  function stopHoverLoop() {
-    if (!hoverLoopInterval) return;
-    clearInterval(hoverLoopInterval);
-    hoverLoopInterval = null;
-  }
-
   function startAutoCapture() {
     if (autoCaptureInterval) return;
     collectOnce();
     autoCaptureInterval = setInterval(collectOnce, 1000);
-    if (isGoogle) {
-      startHoverLoop();
-    }
     updateButton();
   }
 
@@ -317,9 +272,6 @@
     if (!autoCaptureInterval) return;
     clearInterval(autoCaptureInterval);
     autoCaptureInterval = null;
-    if (isGoogle) {
-      stopHoverLoop();
-    }
     updateButton();
   }
 

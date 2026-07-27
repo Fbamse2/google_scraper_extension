@@ -1,14 +1,64 @@
-/* ---------- shared helpers ---------- */
-importScripts('shared.js');
+/* ---------- shared helpers (self-sufficient) ----------
+   Loads shared.js when present, but falls back to inline copies so the
+   worker NEVER dies at startup if that file is missing or fails to load. */
+try {
+  importScripts('shared.js');
+} catch (e) {
+  console.warn('shared.js not loaded — using inline helpers', e);
+}
 
 const shared = globalThis.CollectorShared || {};
-const IMGRES_PREFIX = shared.IMGRES_PREFIX;
-const normalizeUrl = shared.normalizeUrl;
-const extractDirectImage = shared.extractDirectImage;
-const extractThumbnail = shared.extractThumbnail;
-const extractQuery = shared.extractQuery;
-const isGifUrl = shared.isGifUrl;
-const slugify = shared.slugify;
+
+const IMGRES_PREFIX = shared.IMGRES_PREFIX || 'https://www.google.com/imgres?q=';
+
+const normalizeUrl = shared.normalizeUrl || ((raw) => {
+  try {
+    const u = new URL(raw);
+    u.searchParams.delete('ved');
+    u.searchParams.delete('vet');
+    u.hash = '';
+    const params = [...u.searchParams.entries()].sort(([a], [b]) => a.localeCompare(b));
+    return `${u.origin}${u.pathname}?${new URLSearchParams(params).toString()}`;
+  } catch { return raw; }
+});
+
+const extractDirectImage = shared.extractDirectImage || ((googleUrl) => {
+  try {
+    const u = new URL(googleUrl);
+    if (u.hostname.includes('google.com') && u.pathname === '/imgres') {
+      const imgurl = u.searchParams.get('imgurl');
+      if (imgurl) return decodeURIComponent(imgurl);
+    }
+  } catch {}
+  return null;
+});
+
+const extractThumbnail = shared.extractThumbnail || ((googleUrl) => {
+  try {
+    const u = new URL(googleUrl);
+    if (u.hostname.includes('google.com') && u.pathname === '/imgres') {
+      const tbnid = u.searchParams.get('tbnid');
+      if (tbnid) return `https://encrypted-tbn0.gstatic.com/images?q=tbn:${tbnid}`;
+    }
+  } catch {}
+  return null;
+});
+
+const extractQuery = shared.extractQuery || ((googleUrl) => {
+  try {
+    const u = new URL(googleUrl);
+    if (u.pathname === '/imgres') {
+      const q = u.searchParams.get('q');
+      if (q) return decodeURIComponent(q).trim();
+    }
+  } catch {}
+  return null;
+});
+
+const isGifUrl = shared.isGifUrl || ((url) => /\.gif(\?|#|$)/i.test(String(url || '')));
+
+const slugify = shared.slugify || ((s) =>
+  String(s).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'search');
 
 /* ---------- right-click context menus ----------
    Guarded so a missing "contextMenus" permission can't crash the worker. */
@@ -43,7 +93,6 @@ function flashBadge(text) {
 /* ---------- core: dedupe + auto-folder + timestamps ---------- */
 
 function addItems(incoming, done) {
-  console.log('[service_worker.js] addItems:', { incomingCount: incoming?.length || 0 });
   chrome.storage.local.get(['collected_items', 'folders', 'auto_folder_by_query'], (res) => {
     const existing = Array.isArray(res.collected_items) ? res.collected_items : [];
     const autoFolder = !!res.auto_folder_by_query;
@@ -106,7 +155,6 @@ function addItems(incoming, done) {
     const update = { collected_items: existing.concat(toAdd) };
     if (folders) update.folders = folders;
 
-    console.log('[service_worker.js] addItems saved:', toAdd.length);
     chrome.storage.local.set(update, () => { if (done) done(toAdd.length); });
   });
 }

@@ -11,10 +11,8 @@ const esc = (value) =>
   }[c]));
 
 const sharedLib = globalThis.CollectorShared || {};
-const deriveThumb = sharedLib.extractThumbnail;
+const deriveThumb = sharedLib.extractThumbnail || (() => null);
 const slugify = sharedLib.slugify;
-const deduplicateImages = sharedLib.deduplicateImages;
-const filterImages = sharedLib.filterImages;
 
 const NO_IMAGE = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="250" height="200"><rect fill="#f0f0f0" width="250" height="200"/><text fill="#999" x="50%" y="50%" text-anchor="middle" dy=".3em" font-size="14">No img</text></svg>'
@@ -73,12 +71,6 @@ function ensureDefaultFolders() {
 async function loadData() {
   const res = await storageGet(['collected_items', 'folders', 'collector_settings', 'display_settings']);
 
-  console.log('[grid.js] loadData:', {
-    itemsCount: res.collected_items?.length || 0,
-    foldersCount: res.folders?.length || 0,
-    settings: !!res.collector_settings,
-    display: !!res.display_settings
-  });
   state.items = Array.isArray(res.collected_items) ? res.collected_items : [];
   state.folders =
     Array.isArray(res.folders) && res.folders.length
@@ -126,12 +118,8 @@ async function restoreViewState() {
   if (Number.isInteger(vs.page) && vs.page > 0) state.page = vs.page;
   if (typeof vs.search === 'string') state.search = vs.search;
   if (vs.sort === 'newest' || vs.sort === 'oldest') state.sort = vs.sort;
-  // Always default favOnly and gifOnly to false unless explicitly set to true
-  state.favOnly = vs.favOnly === true;
-  state.gifOnly = vs.gifOnly === true;
-  
-  // Clear the saved state to prevent stale filters on next load
-  chrome.storage.local.remove(['grid_view_state']);
+  state.favOnly = !!vs.favOnly;
+  state.gifOnly = !!vs.gifOnly;
 }
 
 /* ---------------- folder helpers ---------------- */
@@ -1198,7 +1186,7 @@ function updateBreadcrumbs() {
       state.folderId = 'root';
       state.page = 1;
       state.selected.clear();
-      loadData().then(() => render());
+      render();
     }
   };
   bc.appendChild(rootCrumb);
@@ -1226,7 +1214,7 @@ function updateBreadcrumbs() {
         state.folderId = folder.id;
         state.page = 1;
         state.selected.clear();
-        loadData().then(() => render());
+        render();
       };
     }
     bc.appendChild(span);
@@ -1258,25 +1246,6 @@ function render() {
   const grid = $('grid');
   if (!grid) return;
 
-  console.log('[grid.js] render:', { 
-    folderId: state.folderId, 
-    itemsCount: state.items.length, 
-    pageItems: state.pageItems.length,
-    favOnly: state.favOnly,
-    gifOnly: state.gifOnly,
-    search: state.search
-  });
-  
-  // Debug: show how many items are in current folder before filters
-  const allFolderItems = state.items.filter((i) => i.folder === state.folderId);
-  let filteredItems = allFolderItems.slice();
-  console.log('[grid.js] render debug:', {
-    totalInFolder: allFolderItems.length,
-    afterFavFilter: state.favOnly ? filteredItems.filter((i) => i.fav).length : allFolderItems.length,
-    afterGifFilter: state.gifOnly ? filteredItems.filter(isGifItem).length : allFolderItems.length,
-    sampleItem: allFolderItems[0]
-  });
-  
   if (state.folderId !== 'root' && state.folderId !== 'removed' && !getFolder(state.folderId)) {
     state.folderId = 'root';
   }
@@ -1319,24 +1288,9 @@ function render() {
   const totalPages = Math.ceil(items.length / state.perPage) || 1;
   if (state.page > totalPages) state.page = totalPages;
 
-  console.log('[grid.js] render pagination:', {
-    itemsLength: items.length,
-    perPage: state.perPage,
-    totalPages: totalPages,
-    currentPage: state.page,
-    start: (state.page - 1) * state.perPage,
-    end: Math.min(items.length, state.page * state.perPage),
-    pageItemsCount: state.pageItems.length
-  });
-
   const start = (state.page - 1) * state.perPage;
   state.pageItems = items.slice(start, start + state.perPage);
   state.viewCounts = { folders: subFolders.length, items: items.length };
-  
-  console.log('[grid.js] render after slice:', {
-    pageItemsCount: state.pageItems.length,
-    firstItem: state.pageItems[0]
-  });
 
   saveViewState();
   updateStorageMeter();
@@ -1394,7 +1348,7 @@ function createFolderCard(folder) {
     state.folderId = folder.id;
     state.page = 1;
     state.selected.clear();
-    loadData().then(() => render());
+    render();
   });
 
   const menuBtn = div.querySelector('.item-menu-btn');
@@ -1856,39 +1810,12 @@ async function downloadAsZIP() {
     return;
   }
 
-  let items = state.selected.size
+  const items = state.selected.size
     ? state.items.filter((i) => state.selected.has(i.url))
     : state.items.filter((i) => i.folder === state.folderId);
 
   if (!items.length) {
     alert('No images to download');
-    return;
-  }
-
-  // Apply deduplication if enabled
-  if (settings.dedupeResults !== false) {
-    const imageObjects = items.map(i => ({
-      url: i.directImage || i.url,
-      width: i.width || 0,
-      height: i.height || 0
-    }));
-    const deduped = deduplicateImages(imageObjects);
-    const dedupedUrls = new Set(deduped.map(img => img.url));
-    items = items.filter(i => dedupedUrls.has(i.directImage || i.url));
-  }
-
-  // Apply quality filter if enabled
-  if (settings.minQualityFilter !== false) {
-    items = items.filter(i => {
-      if (!i.directImage) return true;
-      if (i.width && i.width < 100) return false;
-      if (i.height && i.height < 100) return false;
-      return true;
-    });
-  }
-
-  if (!items.length) {
-    alert('No images match the current filters');
     return;
   }
 
@@ -2063,10 +1990,6 @@ function applySettingsToForm() {
   if (zipFilename) zipFilename.value = settings.zipFilename || 'images';
   const skipFailedImages = $('skipFailedImages');
   if (skipFailedImages) skipFailedImages.checked = settings.skipFailedImages !== false;
-  const dedupeResults = $('dedupeResults');
-  if (dedupeResults) dedupeResults.checked = settings.dedupeResults !== false;
-  const minQualityFilter = $('minQualityFilter');
-  if (minQualityFilter) minQualityFilter.checked = settings.minQualityFilter !== false;
 }
 
 async function saveSettingsForm() {
@@ -2075,9 +1998,7 @@ async function saveSettingsForm() {
     filenamePrefix: $('filenamePrefix')?.value || '',
     handleDuplicates: !!$('handleDuplicates')?.checked,
     zipFilename: $('zipFilename')?.value || 'images',
-    skipFailedImages: !!$('skipFailedImages')?.checked,
-    dedupeResults: !!$('dedupeResults')?.checked,
-    minQualityFilter: !!$('minQualityFilter')?.checked
+    skipFailedImages: !!$('skipFailedImages')?.checked
   };
   await storageSet({ collector_settings: settings });
   $('settingsModal')?.classList.remove('show');
