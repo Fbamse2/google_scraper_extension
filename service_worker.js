@@ -43,6 +43,7 @@ function flashBadge(text) {
 /* ---------- core: dedupe + auto-folder + timestamps ---------- */
 
 function addItems(incoming, done) {
+  console.log('[service_worker.js] addItems:', { incomingCount: incoming?.length || 0 });
   chrome.storage.local.get(['collected_items', 'folders', 'auto_folder_by_query'], (res) => {
     const existing = Array.isArray(res.collected_items) ? res.collected_items : [];
     const autoFolder = !!res.auto_folder_by_query;
@@ -105,6 +106,7 @@ function addItems(incoming, done) {
     const update = { collected_items: existing.concat(toAdd) };
     if (folders) update.folders = folders;
 
+    console.log('[service_worker.js] addItems saved:', toAdd.length);
     chrome.storage.local.set(update, () => { if (done) done(toAdd.length); });
   });
 }

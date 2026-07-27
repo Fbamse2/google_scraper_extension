@@ -73,6 +73,12 @@ function ensureDefaultFolders() {
 async function loadData() {
   const res = await storageGet(['collected_items', 'folders', 'collector_settings', 'display_settings']);
 
+  console.log('[grid.js] loadData:', {
+    itemsCount: res.collected_items?.length || 0,
+    foldersCount: res.folders?.length || 0,
+    settings: !!res.collector_settings,
+    display: !!res.display_settings
+  });
   state.items = Array.isArray(res.collected_items) ? res.collected_items : [];
   state.folders =
     Array.isArray(res.folders) && res.folders.length
@@ -1248,6 +1254,7 @@ function render() {
   const grid = $('grid');
   if (!grid) return;
 
+  console.log('[grid.js] render:', { folderId: state.folderId, itemsCount: state.items.length, pageItems: state.pageItems.length });
   if (state.folderId !== 'root' && state.folderId !== 'removed' && !getFolder(state.folderId)) {
     state.folderId = 'root';
   }

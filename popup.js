@@ -256,6 +256,7 @@ function fetchFromPage() {
       };
 
       if (urls.length) {
+        console.log('[popup.js] save_urls:', { count: urls.length });
         chrome.runtime.sendMessage({ type: 'save_urls', urls }, (r2) => {
           void chrome.runtime.lastError;
           done(r2 && typeof r2.saved === 'number' ? r2.saved : urls.length);

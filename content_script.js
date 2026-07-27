@@ -170,6 +170,7 @@
         urls = images.map(img => img.url);
         
         try { await chrome.runtime.sendMessage({ type: 'save_urls', urls }); } catch {}
+        console.log('[content_script.js] save_urls:', { count: urls.length });
       } else {
         let images = scanGeneric();
         
