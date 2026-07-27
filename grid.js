@@ -1265,10 +1265,12 @@ function render() {
   
   // Debug: show how many items are in current folder before filters
   const allFolderItems = state.items.filter((i) => i.folder === state.folderId);
+  let filteredItems = allFolderItems.slice();
   console.log('[grid.js] render debug:', {
     totalInFolder: allFolderItems.length,
-    afterFavFilter: state.favOnly ? allFolderItems.filter((i) => i.fav).length : allFolderItems.length,
-    afterGifFilter: state.gifOnly ? allFolderItems.filter(isGifItem).length : allFolderItems.length
+    afterFavFilter: state.favOnly ? filteredItems.filter((i) => i.fav).length : allFolderItems.length,
+    afterGifFilter: state.gifOnly ? filteredItems.filter(isGifItem).length : allFolderItems.length,
+    sampleItem: allFolderItems[0]
   });
   
   if (state.folderId !== 'root' && state.folderId !== 'removed' && !getFolder(state.folderId)) {
@@ -1313,9 +1315,24 @@ function render() {
   const totalPages = Math.ceil(items.length / state.perPage) || 1;
   if (state.page > totalPages) state.page = totalPages;
 
+  console.log('[grid.js] render pagination:', {
+    itemsLength: items.length,
+    perPage: state.perPage,
+    totalPages: totalPages,
+    currentPage: state.page,
+    start: (state.page - 1) * state.perPage,
+    end: Math.min(items.length, state.page * state.perPage),
+    pageItemsCount: state.pageItems.length
+  });
+
   const start = (state.page - 1) * state.perPage;
   state.pageItems = items.slice(start, start + state.perPage);
   state.viewCounts = { folders: subFolders.length, items: items.length };
+  
+  console.log('[grid.js] render after slice:', {
+    pageItemsCount: state.pageItems.length,
+    firstItem: state.pageItems[0]
+  });
 
   saveViewState();
   updateStorageMeter();
