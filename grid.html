@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Image Vault — Full Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=IBM+Plex+Mono:wght@400;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#15120e;--surface:#1e1914;--surface2:#262019;--line:#33291f;--line2:#43362a;--ink:#f0e8db;--muted:#9c8e79;--faint:#6b5f4f;--amber:#f5a83c;--amber2:#ffc061;--cyan:#63d8cf;--red:#e05c4f;--violet:#b78cf0;--img-h:200px}
+  html,body{min-height:100%}
+  body{background:radial-gradient(1100px 520px at 88% -12%, rgba(245,168,60,.13), transparent 62%),radial-gradient(800px 460px at -8% 112%, rgba(99,216,207,.06), transparent 60%),var(--bg);background-attachment:fixed;color:var(--ink);font-family:'Space Grotesk',system-ui,sans-serif;font-size:14px}
+  body::before{content:'';position:fixed;top:0;left:0;right:0;height:2px;z-index:10000;pointer-events:none;background:linear-gradient(90deg,var(--amber),rgba(245,168,60,0) 72%)}
+  .grain{position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.05;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>")}
+  .filmstrip{height:10px;border-bottom:1px solid #000;opacity:.55;background:#0b0906 radial-gradient(3px 3px at 10px 50%, rgba(239,231,218,.18) 97%, transparent 100%) repeat-x;background-size:22px 100%}
+  button{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink);background:var(--surface2);border:1px solid var(--line2);border-radius:6px;padding:8px 12px;cursor:pointer;transition:transform .15s,border-color .15s,background .15s,box-shadow .15s,color .15s}
+  button:hover{transform:translateY(-1px);border-color:rgba(245,168,60,.6);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+  button:active{transform:translateY(0) scale(.97)}
+  button:disabled{opacity:.35;pointer-events:none}
+  button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+  button.primary{background:linear-gradient(180deg,var(--amber2),var(--amber));border-color:var(--amber);color:#221503;text-shadow:0 1px 0 rgba(255,255,255,.25)}
+  button.primary:hover{box-shadow:0 6px 20px rgba(245,168,60,.35)}
+  button.danger{color:#f0a79e;border-color:rgba(224,92,79,.5)}
+  button.danger:hover{border-color:var(--red);color:#fff;background:rgba(224,92,79,.15)}
+  input[type=text],input[type=number],input:not([type]),select{background:#120e0a;border:1px solid var(--line2);color:var(--ink);border-radius:6px;padding:8px 11px;font-family:'Space Grotesk',sans-serif;font-size:13px;transition:border-color .15s,box-shadow .15s}
+  input:focus,select:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px rgba(245,168,60,.18)}
+  ::placeholder{color:var(--faint)}
+  .hd{border-bottom:1px solid var(--line);background:linear-gradient(180deg, rgba(38,32,25,.5), rgba(22,18,14,0))}
+  .hd-in{max-width:1500px;margin:0 auto;padding:18px 24px 16px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
+  .brand{display:flex;align-items:center;gap:13px}
+  .logo{width:38px;height:38px;flex:none;border-radius:9px;border:2px solid var(--amber);display:grid;place-items:center;background:rgba(245,168,60,.07);box-shadow:0 0 22px rgba(245,168,60,.16), inset 0 0 12px rgba(245,168,60,.08)}
+  .logo span{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 35%, var(--amber2), var(--amber) 60%, #8a5a17);animation:lensPulse 3.2s ease-in-out infinite}
+  @keyframes lensPulse{0%,100%{transform:scale(1)}50%{transform:scale(.78)}}
+  .brand h1{font-family:'Archivo Black',Impact,sans-serif;font-size:27px;letter-spacing:.02em;line-height:1}
+  .brand h1 b{color:var(--amber);font-weight:inherit}
+  .tag-line{display:block;margin-top:6px;font:600 8.5px 'IBM Plex Mono',monospace;letter-spacing:.24em;color:var(--muted)}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  #searchFilter{width:210px}
+  .trashbtn{color:#f0a79e;border-color:rgba(224,92,79,.4)}
+  .trashbtn:hover{border-color:var(--red);color:#fff}
+  .subbar{position:sticky;top:0;z-index:20;background:rgba(21,18,14,.97);border-bottom:1px solid var(--line)}
+  .subbar-in{max-width:1500px;margin:0 auto;padding:10px 24px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .crumbs{display:flex;align-items:center;flex-wrap:wrap;gap:2px;font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.03em}
+  .crumb{color:var(--muted);cursor:pointer;padding:3px 7px;border-radius:4px;transition:color .15s,background .15s}
+  .crumb:hover{color:var(--amber);background:rgba(245,168,60,.1)}
+  .crumb.active{color:var(--ink);cursor:default}
+  .crumb.active:hover{background:transparent;color:var(--ink)}
+  .separator{color:#57493a;margin:0 2px}
+  .sub-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .subbar select{padding:7px 9px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer}
+  .chip-btn{padding:6px 10px;font-size:12px;line-height:1}
+  .chip-btn.active{border-color:var(--amber);background:rgba(245,168,60,.15);color:var(--amber2)}
+  #gifFilter{font-size:10px;letter-spacing:.12em}
+  #gifFilter.active{border-color:var(--red);color:#f0a79e;background:rgba(224,92,79,.14)}
+  #pageGroupSubBtn{font-size:10px;letter-spacing:.08em}
+  #pageGroupSubBtn.active{border-color:var(--violet);color:#c9a8f5;background:rgba(183,140,240,.13);box-shadow:0 0 14px rgba(183,140,240,.18)}
+  .stat-chip{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:5px 9px;text-transform:uppercase;white-space:nowrap}
+  /* ---- filter bar ---- */
+  .filterbar{max-width:1500px;margin:0 auto;padding:10px 24px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+  .fb-label{font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:var(--faint);text-transform:uppercase}
+  .fb-select{padding:6px 8px;font-size:11px}
+  .tag-filter-chip{padding:5px 10px;font-size:10px;border-radius:20px;border:1px solid var(--line2);background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s}
+  .tag-filter-chip:hover{border-color:var(--cyan);color:var(--cyan)}
+  .tag-filter-chip.on{border-color:var(--cyan);color:var(--cyan);background:rgba(99,216,207,.13);box-shadow:0 0 10px rgba(99,216,207,.15)}
+  .saved-view-chip{padding:5px 10px;font-size:10px;border-radius:20px;border:1px dashed var(--violet);background:rgba(183,140,240,.08);color:#c9a8f5;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+  .saved-view-chip:hover{background:rgba(183,140,240,.18);box-shadow:0 0 10px rgba(183,140,240,.2)}
+  .saved-view-chip .del{color:var(--red);font-weight:700}
+  .display-panel{position:relative}
+  .display-panel summary{display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;background:var(--surface2);border:1px solid var(--line2);border-radius:6px;padding:8px 12px;cursor:pointer;user-select:none;transition:border-color .15s,color .15s,transform .15s}
+  .display-panel summary:hover{border-color:rgba(245,168,60,.55);transform:translateY(-1px)}
+  .display-panel[open] summary{border-color:var(--amber);color:var(--amber)}
+  .dp-grid{display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:60;width:290px;background:var(--surface2);border:1px solid var(--line2);border-radius:9px;padding:14px;box-shadow:0 18px 44px rgba(0,0,0,.55)}
+  .display-panel[open] .dp-grid{display:grid;gap:11px;animation:pop .16s ease}
+  .dp-grid label{display:flex;align-items:center;gap:8px;font:600 10px 'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .dp-grid input[type=range]{flex:1;accent-color:var(--amber)}
+  .dp-grid input[type=number]{width:64px;padding:5px 7px}
+  .rv{font:600 10px 'IBM Plex Mono',monospace;color:var(--amber);min-width:46px;text-align:right}
+  .switch-label{display:flex;align-items:center;gap:9px;cursor:pointer}
+  .switch-label input{display:none}
+  .switch{flex:none;width:32px;height:18px;border-radius:9px;background:#3a3128;position:relative;transition:background .2s}
+  .switch::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--muted);transition:transform .2s,background .2s}
+  .switch-label input:checked + .switch{background:var(--amber)}
+  .switch-label input:checked + .switch::after{transform:translateX(14px);background:#221503}
+  .bulk-bar{display:none;position:sticky;top:0;z-index:30;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 24px;background:#2b2113;border-bottom:1px solid rgba(245,168,60,.4);box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  .bulk-bar.show{display:flex}
+  .bulk-label{font:700 11px 'IBM Plex Mono',monospace;letter-spacing:.1em;color:var(--amber2);text-transform:uppercase;margin-right:6px}
+  .grid{max-width:1500px;margin:0 auto;padding:22px 24px 40px;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;counter-reset:frame}
+  .grid-item{position:relative;z-index:1;overflow:visible;counter-increment:frame;background:linear-gradient(180deg,#221c16,#1d1813);border:1px solid var(--line);border-radius:9px;cursor:default;transition:transform .18s,border-color .18s,box-shadow .18s;animation:fadeUp .45s cubic-bezier(.2,.7,.3,1) both}
+  .grid-item:nth-child(1){animation-delay:.02s}.grid-item:nth-child(2){animation-delay:.05s}.grid-item:nth-child(3){animation-delay:.08s}.grid-item:nth-child(4){animation-delay:.11s}.grid-item:nth-child(5){animation-delay:.14s}.grid-item:nth-child(6){animation-delay:.17s}.grid-item:nth-child(7){animation-delay:.2s}.grid-item:nth-child(8){animation-delay:.23s}.grid-item:nth-child(9){animation-delay:.26s}.grid-item:nth-child(10){animation-delay:.29s}.grid-item:nth-child(11){animation-delay:.32s}.grid-item:nth-child(12){animation-delay:.35s}
+  .grid-item:hover,.grid-item:focus-within{z-index:40;transform:translateY(-3px);border-color:rgba(245,168,60,.65);box-shadow:0 12px 28px rgba(0,0,0,.5)}
+  .grid-item::after{content:counter(frame,decimal-leading-zero);position:absolute;top:8px;left:50%;transform:translateX(-50%);font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:rgba(240,232,219,.75);background:rgba(12,10,7,.72);padding:2px 7px;border-radius:3px;pointer-events:none}
+  .grid-item.selected{border-color:var(--cyan);box-shadow:0 0 0 2px rgba(99,216,207,.4),0 10px 22px rgba(0,0,0,.45)}
+  .grid-item.dragging{opacity:.45}
+  .grid-item.drag-over{border-color:var(--cyan);box-shadow:0 0 0 2px var(--cyan)}
+  .grid-item-image{width:100%;height:var(--img-h);object-fit:contain;display:block;background:#0b0906;border-radius:8px 8px 0 0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.03);cursor:zoom-in;transition:transform .35s ease}
+  .grid-item:hover .grid-item-image{transform:scale(1.02)}
+  .item-select{position:absolute;top:8px;left:8px;z-index:4;background:rgba(12,10,7,.6);padding:3px;border-radius:5px;line-height:0}
+  .select-checkbox{width:17px;height:17px;accent-color:var(--cyan);cursor:pointer}
+  .fav-chip{position:absolute;top:44px;left:8px;z-index:4;width:26px;height:26px;padding:0;font-size:13px;line-height:1;border-radius:50%;background:rgba(12,10,7,.65);border-color:transparent;opacity:0}
+  .grid-item:hover .fav-chip,.grid-item.fav .fav-chip{opacity:1}
+  .fav-chip.on{background:rgba(245,168,60,.2);border-color:rgba(245,168,60,.55)}
+  .gif-badge{position:absolute;right:8px;top:calc(var(--img-h) - 28px);z-index:4;display:inline-flex;align-items:center;gap:5px;font:700 8.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;color:#ffd7d2;background:rgba(12,10,7,.8);border:1px solid rgba(224,92,79,.55);padding:3px 7px;border-radius:4px;pointer-events:none}
+  .gif-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--red);animation:gifPulse 1.2s ease-in-out infinite}
+  @keyframes gifPulse{0%,100%{opacity:1}50%{opacity:.2}}
+  /* rating stars on card */
+  .rating-stars{display:flex;gap:2px;margin-top:6px}
+  .star{font-size:14px;color:#4a4038;cursor:pointer;transition:color .12s,transform .12s;line-height:1}
+  .star:hover{transform:scale(1.25)}
+  .star.filled{color:var(--amber)}
+  .star:hover ~ .star{color:#4a4038}
+  /* tags on card */
+  .card-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+  .card-tag{font:600 9px 'IBM Plex Mono',monospace;color:var(--cyan);background:rgba(99,216,207,.1);border:1px solid rgba(99,216,207,.35);border-radius:20px;padding:2px 8px;cursor:pointer;transition:all .15s}
+  .card-tag:hover{background:rgba(99,216,207,.25);box-shadow:0 0 8px rgba(99,216,207,.2)}
+  .item-menu{position:absolute;top:8px;right:8px;z-index:4}
+  .item-menu-btn{width:26px;height:26px;padding:0;font-size:13px;line-height:1;opacity:0;transform:translateY(-3px)}
+  .grid-item:hover .item-menu-btn,.item-menu-btn:focus-visible{opacity:1;transform:none}
+  .item-menu-dropdown{display:none;position:absolute;top:32px;right:0;z-index:50;min-width:172px;background:var(--surface2);border:1px solid var(--line2);border-radius:8px;overflow:hidden;box-shadow:0 16px 36px rgba(0,0,0,.55)}
+  .item-menu-dropdown.show{display:block;animation:pop .16s ease}
+  .item-menu-dropdown button{display:block;width:100%;text-align:left;border:0;border-radius:0;background:transparent;text-transform:none;letter-spacing:0;font-family:'Space Grotesk',sans-serif;font-size:12.5px}
+  .item-menu-dropdown button:hover{transform:none;box-shadow:none;background:rgba(245,168,60,.14)}
+  .item-menu-dropdown button.danger{color:#f0a79e}
+  .item-menu-dropdown button.danger:hover{background:rgba(224,92,79,.16);color:#fff}
+  .grid-item-info{padding:9px 11px 11px}
+  .grid-item-url{font:400 10.5px/1.5 'IBM Plex Mono',monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .grid-item-actions{display:flex;gap:6px;margin-top:9px}
+  .grid-item-actions button{flex:1;font-size:9.5px;padding:6px 4px}
+  .grid-folder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:160px;cursor:pointer}
+  .folder-icon{font-size:44px;filter:drop-shadow(0 5px 10px rgba(0,0,0,.45));transition:transform .2s}
+  .grid-folder:hover .folder-icon{transform:scale(1.12) rotate(-4deg)}
+  .folder-name{font-weight:700;font-size:14px;max-width:88%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .folder-count{font:600 9.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .pager{display:flex;align-items:center;justify-content:center;gap:16px;padding:6px 20px 48px}
+  #pageInfo{font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.1em;color:var(--muted);text-transform:uppercase}
+  /* ---- hover preview ---- */
+  .hover-preview{display:none;position:fixed;z-index:90;width:300px;background:var(--surface2);border:1px solid var(--line2);border-radius:10px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.6);pointer-events:none}
+  .hover-preview.show{display:block;animation:pop .18s ease}
+  .hover-preview img{width:100%;height:200px;object-fit:contain;background:#0b0906;display:block}
+  .hp-meta{padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+  .hp-rating{color:var(--amber);font-size:13px;letter-spacing:2px}
+  .hp-tags{font:600 10px 'IBM Plex Mono',monospace;color:var(--cyan)}
+  .hp-dims{font:600 10px 'IBM Plex Mono',monospace;color:var(--muted)}
+  /* ---- compare ---- */
+  .compare-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:14px}
+  .compare-cell{background:var(--surface2);border:1px solid var(--line2);border-radius:8px;overflow:hidden}
+  .compare-cell img{width:100%;height:220px;object-fit:contain;background:#0b0906;display:block}
+  .compare-meta{padding:8px 10px;display:flex;flex-direction:column;gap:3px}
+  .compare-rating{color:var(--amber);font-size:12px;letter-spacing:2px}
+  .compare-tags{font:600 10px 'IBM Plex Mono',monospace;color:var(--cyan)}
+  .compare-dims{font:600 10px 'IBM Plex Mono',monospace;color:var(--muted)}
+  /* ---- tag editor ---- */
+  .tag-editor-chips{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0}
+  .tag-chip{padding:6px 12px;font-size:11px;border-radius:20px;border:1px solid var(--line2);background:var(--surface);color:var(--muted);cursor:pointer;transition:all .15s}
+  .tag-chip:hover{border-color:var(--cyan);color:var(--cyan)}
+  .tag-chip.on{border-color:var(--cyan);color:var(--cyan);background:rgba(99,216,207,.15);box-shadow:0 0 10px rgba(99,216,207,.18)}
+  .tag-add-row{display:flex;gap:8px;margin-top:10px}
+  .tag-add-row input{flex:1}
+  .lightbox{display:none;position:fixed;inset:0;z-index:300;background:rgba(8,6,4,.95);flex-direction:column}
+  .lightbox.show{display:flex;animation:fadeIn .2s ease}
+  .lb-top{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 20px}
+  .lb-counter{font:600 12px 'IBM Plex Mono',monospace;letter-spacing:.22em;color:var(--amber2)}
+  .lb-gif{position:static;transform:none}
+  .lb-hint{font:600 9px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#57493a}
+  .lb-icon-btn{width:34px;height:34px;padding:0;font-size:13px}
+  .lb-image{margin:auto;max-width:94vw;max-height:70vh;width:auto;height:auto;object-fit:contain;background:#0b0906;border:1px solid var(--line2);box-shadow:0 30px 90px rgba(0,0,0,.8);animation:lbZoom .28s cubic-bezier(.2,.85,.3,1.05)}
+  .lb-image.magnifying{cursor:crosshair}
+  .lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:66px;padding:0;font-size:18px;background:rgba(38,32,25,.78);border-color:transparent}
+  .lb-nav:hover{transform:translateY(-50%) scale(1.07);border-color:var(--amber);background:var(--surface2)}
+  .lb-prev{left:16px}.lb-next{right:16px}
+  .lb-bottom{display:flex;align-items:center;gap:14px;padding:13px 20px;background:rgba(22,18,14,.92);border-top:1px solid rgba(58,49,40,.7)}
+  .lb-url{flex:1;min-width:0;font:400 11px/1.5 'IBM Plex Mono',monospace;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lb-actions{display:flex;gap:8px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+  #lbMagnify.active,#lbSlideshow.active,#lbStar.active{border-color:var(--amber);color:var(--amber);background:rgba(245,168,60,.12)}
+  @keyframes lbZoom{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}
+  .lb-loupe{display:none;position:fixed;z-index:320;width:190px;height:190px;border-radius:50%;border:2px solid var(--amber);background-repeat:no-repeat;pointer-events:none;transform:translate(-50%,-50%);box-shadow:0 12px 40px rgba(0,0,0,.7), inset 0 0 0 1px rgba(0,0,0,.4)}
+  .lb-loupe.show{display:block;animation:pop .12s ease}
+  .lb-loupe span{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:var(--amber2);background:rgba(12,10,7,.85);padding:2px 7px;border-radius:3px}
+  .modal{display:none;position:fixed;inset:0;z-index:150;background:rgba(10,8,5,.74);align-items:center;justify-content:center;padding:20px}
+  .modal.show{display:flex;animation:fadeIn .18s ease}
+  .modal-card{width:min(430px,100%);background:var(--surface);border:1px solid var(--line2);border-radius:12px;padding:24px;box-shadow:0 26px 70px rgba(0,0,0,.65);animation:riseIn .24s cubic-bezier(.2,.85,.3,1.15)}
+  .modal-card.wide{width:min(760px,100%)}
+  .modal-card h2{font-family:'Archivo Black',Impact,sans-serif;font-size:17px;letter-spacing:.03em;color:var(--amber)}
+  .modal-card label{display:block;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:14px}
+  .modal-card label input,.modal-card label select{display:block;width:100%;margin-top:6px}
+  .modal-card label.check{display:flex;align-items:center;gap:9px;cursor:pointer}
+  .modal-card label.check input{display:inline-block;width:15px;height:15px;margin:0;accent-color:var(--amber)}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}
+  .folder-list{max-height:300px;overflow-y:auto;margin-top:12px;display:flex;flex-direction:column;gap:6px}
+  .folder-list button{text-align:left;text-transform:none;letter-spacing:0;font-family:'Space Grotesk',sans-serif;font-size:13px}
+  .stats-body{max-height:340px;overflow-y:auto;margin-top:8px}
+  .stat-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 2px;border-bottom:1px dashed rgba(58,49,40,.7)}
+  .stat-row span{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .stat-row b{font-family:'Space Grotesk',sans-serif;font-size:14px;color:var(--ink);word-break:break-all;text-align:right}
+  .stat-row b.amber{color:var(--amber2)}
+  .stat-sub{margin:14px 0 4px;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+  .dupes-body{max-height:400px;overflow-y:auto;margin-top:12px;display:flex;flex-direction:column;gap:10px}
+  .dupes-empty{text-align:center;color:var(--muted);padding:26px 10px;border:1px dashed var(--line2);border-radius:8px;font-size:13px}
+  .dupe-group{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:9px;padding:10px 12px;background:#17130f;animation:fadeUp .3s both;transition:border-color .15s}
+  .dupe-group:hover{border-color:rgba(245,168,60,.45)}
+  .dupe-thumbs{display:flex;gap:6px;flex:1;min-width:0;flex-wrap:wrap}
+  .dupe-thumbs img{width:54px;height:54px;object-fit:cover;border-radius:6px;background:#0b0906;border:1px solid var(--line2);transition:transform .15s,border-color .15s}
+  .dupe-thumbs img:hover{transform:scale(1.12);border-color:var(--amber)}
+  .dupe-thumbs img.dupe-keep{outline:2px solid var(--amber);outline-offset:1px}
+  .dupe-meta{flex:none;display:flex;flex-direction:column;gap:2px;text-align:right}
+  .dupe-meta b{font:700 12px 'IBM Plex Mono',monospace;color:var(--amber2);letter-spacing:.06em}
+  .dupe-meta span{font:500 8.5px 'IBM Plex Mono',monospace;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+  .progress-overlay{display:none;position:fixed;inset:0;z-index:200;background:rgba(10,8,5,.78);align-items:center;justify-content:center}
+  .progress-overlay.show{display:flex;animation:fadeIn .2s ease}
+  .progress-card{width:min(420px,90%);background:var(--surface);border:1px solid var(--line2);border-radius:12px;padding:26px;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+  .progress-track{height:9px;background:#120e0a;border:1px solid var(--line);border-radius:5px;overflow:hidden}
+  #progressFill{height:100%;width:0;position:relative;background:linear-gradient(90deg,var(--amber),var(--amber2));transition:width .25s ease}
+  #progressFill::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(255,255,255,.22) 0 8px,transparent 8px 16px);animation:stripes .8s linear infinite}
+  #progressText{margin-top:12px;font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;color:var(--muted);text-align:center;text-transform:uppercase}
+  .toast{display:none;position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:400;align-items:center;gap:14px;background:var(--surface2);border:1px solid rgba(245,168,60,.5);border-radius:9px;padding:11px 16px;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+  .toast.show{display:flex;animation:toastUp .25s cubic-bezier(.2,.85,.3,1.2)}
+  #toastMsg{font:600 11px 'IBM Plex Mono',monospace;letter-spacing:.05em;color:var(--ink)}
+  #toastUndo{color:var(--amber2);border-color:var(--amber)}
+  @keyframes toastUp{from{opacity:0;transform:translateX(-50%) translateY(14px)}to{opacity:1;transform:translateX(-50%)}}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-track{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:#3a3128;border-radius:5px;border:2px solid var(--bg)}
+  ::-webkit-scrollbar-thumb:hover{background:rgba(245,168,60,.55)}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  @keyframes pop{from{opacity:0;transform:translateY(-6px) scale(.96)}to{opacity:1;transform:none}}
+  @keyframes riseIn{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
+  @keyframes stripes{from{transform:translateX(0)}to{transform:translateX(22.6px)}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+  <div class="grain"></div>
+
+  <header class="hd">
+    <div class="filmstrip"></div>
+    <div class="hd-in">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"><span></span></div>
+        <div>
+          <h1>IMAGE <b>VAULT</b></h1>
+          <span class="tag-line">GOOGLE IMAGE LINK COLLECTOR · FULL LIBRARY · V8</span>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input id="searchFilter" type="text" placeholder="⌕ Search collected URLs…">
+        <button id="newFolderBtn">📁 New Folder</button>
+        <button id="download" class="primary">📥 ZIP</button>
+        <button id="galleryBtn" title="Export current folder / selection as a standalone HTML gallery">🌐 HTML</button>
+        <button id="verifyGifsBtn" title="Sniff file signatures to confirm which .gif items are real GIFs">🎞 Verify GIFs</button>
+        <button id="dupesBtn" title="Fingerprint images and find visual duplicates">👥 Dupes</button>
+        <button id="saveViewBtn" title="Save the current folder + filters as a named view">💠 Save View</button>
+        <button id="backupBtn" title="Export everything as a JSON backup">💾 Backup</button>
+        <button id="restoreBtn" title="Restore a JSON backup">📂 Restore</button>
+        <button id="statsBtn" title="Library statistics">📊 Stats</button>
+        <button id="settingsBtn">⚙️ Settings</button>
+        <button id="refresh" title="Reload data">↻</button>
+        <button id="showTrash" class="trashbtn">🗑️ Trash (<span id="trashCount">0</span>)</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="subbar">
+    <div class="subbar-in">
+      <div id="breadcrumbs" class="crumbs"></div>
+      <div class="sub-right">
+        <select id="sortSelect" title="Sort order">
+          <option value="newest">↓ Newest</option>
+          <option value="oldest">↑ Oldest</option>
+          <option value="rating">★ Rating</option>
+        </select>
+        <button id="favFilter" class="chip-btn" title="Show favorites only">⭐</button>
+        <button id="gifFilter" class="chip-btn" title="Show GIFs only">GIF</button>
+        <button id="pageGroupBtn" class="chip-btn" title="Group this folder's items into numbered page folders">🗂 This Folder</button>
+        <button id="pageGroupSubBtn" class="chip-btn" title="Group this folder AND all subfolders">🗂 Sub Folders</button>
+        <button id="pageGroupAllBtn" class="chip-btn" title="Group the entire library into the root">🗂 All Folders</button>
+        <span id="stats" class="stat-chip">0 folders, 0 images</span>
+        <span id="storageChip" class="stat-chip">💽 …</span>
+        <details class="display-panel">
+          <summary>🎛 Display</summary>
+          <div class="dp-grid">
+            <label>Grid <input type="range" id="gridSize" min="120" max="420" step="10" value="250"><span id="gridSizeValue" class="rv">250px</span></label>
+            <label>Height <input type="range" id="imageHeight" min="80" max="420" step="10" value="200"><span id="imageHeightValue" class="rv">200px</span></label>
+            <label>Gap <input type="range" id="gap" min="4" max="60" step="2" value="20"><span id="gapValue" class="rv">20px</span></label>
+            <label>Items/Page <input type="number" id="itemsPerPageInput" min="1" max="200" value="30"></label>
+            <label class="switch-label">Show URLs <input type="checkbox" id="showUrls" checked><span class="switch"></span></label>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+
+  <div class="filterbar">
+    <span class="fb-label">Rating</span>
+    <select id="ratingFilter" class="fb-select">
+      <option value="0">Any</option><option value="1">1★+</option><option value="2">2★+</option>
+      <option value="3">3★+</option><option value="4">4★+</option><option value="5">5★</option>
+    </select>
+    <span class="fb-label">Orient</span>
+    <select id="orientFilter" class="fb-select">
+      <option value="any">Any</option><option value="landscape">Landscape</option>
+      <option value="portrait">Portrait</option><option value="square">Square</option>
+    </select>
+    <span class="fb-label">Min&nbsp;res</span>
+    <select id="resFilter" class="fb-select">
+      <option value="0">Any</option><option value="720">720p+</option>
+      <option value="1080">1080p+</option><option value="2160">4K+</option>
+    </select>
+    <span class="fb-label">Tags</span>
+    <span id="tagFilters" style="display:flex;flex-wrap:wrap;gap:6px"></span>
+    <span class="fb-label" style="margin-left:8px">Views</span>
+    <span id="savedViews" style="display:flex;flex-wrap:wrap;gap:6px"></span>
+  </div>
+
+  <div id="bulkControls" class="bulk-bar"></div>
+
+  <main id="grid" class="grid"></main>
+
+  <footer class="pager">
+    <button id="prevPage">← Prev</button>
+    <span id="pageInfo">Page 1 of 1</span>
+    <button id="nextPage">Next →</button>
+  </footer>
+
+  <div id="hoverPreview" class="hover-preview"></div>
+
+  <div id="lightbox" class="lightbox">
+    <div class="lb-top">
+      <span id="lbCounter" class="lb-counter">00 / 00</span>
+      <span id="lbGifTag" class="gif-badge lb-gif" style="display:none">GIF</span>
+      <span class="lb-hint">← → navigate · 🔍 then scroll to zoom · esc close</span>
+      <button id="lbClose" class="lb-icon-btn" title="Close (Esc)">✕</button>
+    </div>
+    <button id="lbPrev" class="lb-nav lb-prev" title="Previous (←)">←</button>
+    <img id="lbImage" class="lb-image" alt="">
+    <button id="lbNext" class="lb-nav lb-next" title="Next (→)">→</button>
+    <div class="lb-bottom">
+      <span id="lbUrl" class="lb-url"></span>
+      <div class="lb-actions">
+        <button id="lbStar" title="Favorite">☆</button>
+        <button id="lbMagnify" title="Magnifier — hover the image, scroll to zoom">🔍 Magnify</button>
+        <button id="lbSlideshow" title="Auto-advance every 3 seconds">▶ Slideshow</button>
+        <button id="lbSave" title="Download this image">⬇ Save</button>
+        <button id="lbCopy">Copy URL</button>
+        <button id="lbOpenImg" class="primary">Open Image</button>
+        <button id="lbOpenPage">Open Page</button>
+      </div>
+    </div>
+  </div>
+  <div id="lbLoupe" class="lb-loupe"><span id="lbLoupeZoom">3.0×</span></div>
+
+  <div id="settingsModal" class="modal">
+    <div class="modal-card">
+      <h2>Settings</h2>
+      <label>Filename format
+        <select id="filenameFormat"><option value="original">Original</option><option value="custom">Custom prefix</option></select>
+      </label>
+      <label>Custom prefix <input id="filenamePrefix" type="text" placeholder="img"></label>
+      <label class="check"><input type="checkbox" id="handleDuplicates" checked> Handle duplicate names</label>
+      <label>ZIP filename <input id="zipFilename" type="text" value="images"></label>
+      <label class="check"><input type="checkbox" id="skipFailedImages" checked> Skip blocked images (CORS)</label>
+      <div class="modal-actions">
+        <button id="closeSettings">Cancel</button>
+        <button id="saveSettings" class="primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="moveToModal" class="modal">
+    <div class="modal-card">
+      <h2>Move to Folder</h2>
+      <div id="moveToFolderList" class="folder-list"></div>
+      <div class="modal-actions"><button id="closeMoveTo">Cancel</button></div>
+    </div>
+  </div>
+
+  <div id="tagModal" class="modal">
+    <div class="modal-card">
+      <h2>🏷 Edit Tags <span id="tagTargetLabel" style="font:600 11px 'IBM Plex Mono';color:var(--muted)"></span></h2>
+      <div id="tagEditorChips" class="tag-editor-chips"></div>
+      <div class="tag-add-row">
+        <input id="newTagInput" type="text" placeholder="new tag…">
+        <button id="addTagBtn" class="primary">Add</button>
+      </div>
+      <div class="modal-actions"><button id="closeTags" class="primary">Done</button></div>
+    </div>
+  </div>
+
+  <div id="compareModal" class="modal">
+    <div class="modal-card wide">
+      <h2>⚖️ Compare</h2>
+      <div id="compareGrid" class="compare-grid"></div>
+      <div class="modal-actions"><button id="closeCompare" class="primary">Close</button></div>
+    </div>
+  </div>
+
+  <div id="statsModal" class="modal">
+    <div class="modal-card">
+      <h2>📊 Library Stats</h2>
+      <div id="statsBody" class="stats-body"></div>
+      <div class="modal-actions"><button id="closeStats">Close</button></div>
+    </div>
+  </div>
+
+  <div id="dupesModal" class="modal">
+    <div class="modal-card wide">
+      <h2>👥 Duplicate Groups</h2>
+      <div id="dupesBody" class="dupes-body"></div>
+      <div class="modal-actions">
+        <button id="mergeAllDupes" class="primary">Merge All</button>
+        <button id="closeDupes">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="progressInfo" class="progress-overlay">
+    <div class="progress-card">
+      <div class="progress-track"><div id="progressFill"></div></div>
+      <div id="progressText">Working...</div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">
+    <span id="toastMsg"></span>
+    <button id="toastUndo">↩ Undo</button>
+  </div>
+  <input type="file" id="restoreInput" accept=".json,application/json" hidden>
+
+  <script src="shared.js"></script>
+  <script src="jszip.min.js"></script>
+  <script src="grid.js"></script>
+</body>
+</html>

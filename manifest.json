@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Google Image Link Collector",
+  "version": "7.1",
+  "description": "Collect Google images with grid-based folders, drag-drop, and advanced organization.",
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "service_worker.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Collected URLs"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["shared.js", "content_script.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
