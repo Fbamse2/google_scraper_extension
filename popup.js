@@ -305,6 +305,81 @@ async function saveTxt() {
   toast('Downloading .txt');
 }
 
+async function downloadZip() {
+  const items = getVisibleItems(await getItems());
+  if (!items.length) return toast('Nothing to download');
+
+  // Load JSZip dynamically from CDN if not available
+  if (!window.JSZip) {
+    try {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+      await new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    } catch (err) {
+      return toast('Failed to load ZIP library. Check internet connection.');
+    }
+  }
+
+  const zip = new window.JSZip();
+  const btn = $('downloadZip');
+  const originalText = btn.innerHTML;
+  
+  // Show progress
+  btn.innerHTML = '⏳<span>Zipping...</span>';
+  btn.disabled = true;
+
+  let successCount = 0;
+  let failCount = 0;
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const url = item.directImage || item.url;
+    if (!url) continue;
+
+    try {
+      // Generate filename from URL
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname.split('/').pop() || `image_${i}`;
+      const ext = pathname.split('.').pop() || 'jpg';
+      const filename = `image_${String(i).padStart(4, '0')}.${ext}`;
+
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      zip.file(filename, blob);
+      successCount++;
+    } catch (err) {
+      console.warn(`Failed to download ${url}:`, err);
+      failCount++;
+    }
+  }
+
+  try {
+    const content = await zip.generateAsync({ type: 'blob' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(content);
+    link.download = `image_vault_${new Date().toISOString().slice(0, 10)}.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+
+    let msg = `Downloaded ${successCount} images`;
+    if (failCount > 0) msg += ` (${failCount} failed)`;
+    toast(msg);
+  } catch (err) {
+    toast('Failed to create ZIP file');
+    console.error(err);
+  } finally {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+  }
+}
+
 function disarmClear() {
   clearArmed = false;
   clearTimeout(clearTimer);
@@ -375,6 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
   on('copyAll', 'click', copyAll);
   on('copyMd', 'click', copyMd);
   on('saveTxt', 'click', saveTxt);
+  on('downloadZip', 'click', downloadZip);
   on('clear', 'click', handleClear);
 
   on('openGrid', 'click', () => {
@@ -411,6 +487,8 @@ document.addEventListener('DOMContentLoaded', () => {
     false,
     (enabled) => notifyActiveTab({ type: 'toggle_highlight', enabled })
   );
+  bindToggle(['dedupeToggle', 'dedupeResults'], 'dedupe_results', true);
+  bindToggle(['qualityToggle', 'minQuality'], 'min_quality_filter', true);
 
   /* live refresh while the popup is open */
   chrome.storage.onChanged.addListener((changes, area) => {

@@ -13,6 +13,8 @@ const esc = (value) =>
 const sharedLib = globalThis.CollectorShared || {};
 const deriveThumb = sharedLib.extractThumbnail;
 const slugify = sharedLib.slugify;
+const deduplicateImages = sharedLib.deduplicateImages;
+const filterImages = sharedLib.filterImages;
 
 const NO_IMAGE = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="250" height="200"><rect fill="#f0f0f0" width="250" height="200"/><text fill="#999" x="50%" y="50%" text-anchor="middle" dy=".3em" font-size="14">No img</text></svg>'
@@ -1810,12 +1812,39 @@ async function downloadAsZIP() {
     return;
   }
 
-  const items = state.selected.size
+  let items = state.selected.size
     ? state.items.filter((i) => state.selected.has(i.url))
     : state.items.filter((i) => i.folder === state.folderId);
 
   if (!items.length) {
     alert('No images to download');
+    return;
+  }
+
+  // Apply deduplication if enabled
+  if (settings.dedupeResults !== false) {
+    const imageObjects = items.map(i => ({
+      url: i.directImage || i.url,
+      width: i.width || 0,
+      height: i.height || 0
+    }));
+    const deduped = deduplicateImages(imageObjects);
+    const dedupedUrls = new Set(deduped.map(img => img.url));
+    items = items.filter(i => dedupedUrls.has(i.directImage || i.url));
+  }
+
+  // Apply quality filter if enabled
+  if (settings.minQualityFilter !== false) {
+    items = items.filter(i => {
+      if (!i.directImage) return true;
+      if (i.width && i.width < 100) return false;
+      if (i.height && i.height < 100) return false;
+      return true;
+    });
+  }
+
+  if (!items.length) {
+    alert('No images match the current filters');
     return;
   }
 
@@ -1990,6 +2019,10 @@ function applySettingsToForm() {
   if (zipFilename) zipFilename.value = settings.zipFilename || 'images';
   const skipFailedImages = $('skipFailedImages');
   if (skipFailedImages) skipFailedImages.checked = settings.skipFailedImages !== false;
+  const dedupeResults = $('dedupeResults');
+  if (dedupeResults) dedupeResults.checked = settings.dedupeResults !== false;
+  const minQualityFilter = $('minQualityFilter');
+  if (minQualityFilter) minQualityFilter.checked = settings.minQualityFilter !== false;
 }
 
 async function saveSettingsForm() {
@@ -1998,7 +2031,9 @@ async function saveSettingsForm() {
     filenamePrefix: $('filenamePrefix')?.value || '',
     handleDuplicates: !!$('handleDuplicates')?.checked,
     zipFilename: $('zipFilename')?.value || 'images',
-    skipFailedImages: !!$('skipFailedImages')?.checked
+    skipFailedImages: !!$('skipFailedImages')?.checked,
+    dedupeResults: !!$('dedupeResults')?.checked,
+    minQualityFilter: !!$('minQualityFilter')?.checked
   };
   await storageSet({ collector_settings: settings });
   $('settingsModal')?.classList.remove('show');
