@@ -126,11 +126,12 @@ async function restoreViewState() {
   if (Number.isInteger(vs.page) && vs.page > 0) state.page = vs.page;
   if (typeof vs.search === 'string') state.search = vs.search;
   if (vs.sort === 'newest' || vs.sort === 'oldest') state.sort = vs.sort;
-  // Only restore favOnly/gifOnly if explicitly saved, otherwise default to false
-  if (vs.favOnly !== undefined) state.favOnly = !!vs.favOnly;
-  else state.favOnly = false;
-  if (vs.gifOnly !== undefined) state.gifOnly = !!vs.gifOnly;
-  else state.gifOnly = false;
+  // Always default favOnly and gifOnly to false unless explicitly set to true
+  state.favOnly = vs.favOnly === true;
+  state.gifOnly = vs.gifOnly === true;
+  
+  // Clear the saved state to prevent stale filters on next load
+  chrome.storage.local.remove(['grid_view_state']);
 }
 
 /* ---------------- folder helpers ---------------- */
