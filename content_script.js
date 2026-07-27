@@ -238,6 +238,8 @@
 
   /* ---------------- floating button + auto-capture ---------------- */
 
+  let hoverLoopInterval = null;
+
   function updateButton() {
     const btn = document.querySelector('.gsl-floating-btn');
     if (!btn) return;
@@ -250,10 +252,28 @@
     }
   }
 
+  function startHoverLoop() {
+    if (hoverLoopInterval) return;
+    hoverLoopInterval = setInterval(async () => {
+      if (isGoogle) {
+        await scanGoogle();
+      }
+    }, 300);
+  }
+
+  function stopHoverLoop() {
+    if (!hoverLoopInterval) return;
+    clearInterval(hoverLoopInterval);
+    hoverLoopInterval = null;
+  }
+
   function startAutoCapture() {
     if (autoCaptureInterval) return;
     collectOnce();
     autoCaptureInterval = setInterval(collectOnce, 1000);
+    if (isGoogle) {
+      startHoverLoop();
+    }
     updateButton();
   }
 
@@ -261,6 +281,9 @@
     if (!autoCaptureInterval) return;
     clearInterval(autoCaptureInterval);
     autoCaptureInterval = null;
+    if (isGoogle) {
+      stopHoverLoop();
+    }
     updateButton();
   }
 
