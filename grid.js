@@ -1254,7 +1254,23 @@ function render() {
   const grid = $('grid');
   if (!grid) return;
 
-  console.log('[grid.js] render:', { folderId: state.folderId, itemsCount: state.items.length, pageItems: state.pageItems.length });
+  console.log('[grid.js] render:', { 
+    folderId: state.folderId, 
+    itemsCount: state.items.length, 
+    pageItems: state.pageItems.length,
+    favOnly: state.favOnly,
+    gifOnly: state.gifOnly,
+    search: state.search
+  });
+  
+  // Debug: show how many items are in current folder before filters
+  const allFolderItems = state.items.filter((i) => i.folder === state.folderId);
+  console.log('[grid.js] render debug:', {
+    totalInFolder: allFolderItems.length,
+    afterFavFilter: state.favOnly ? allFolderItems.filter((i) => i.fav).length : allFolderItems.length,
+    afterGifFilter: state.gifOnly ? allFolderItems.filter(isGifItem).length : allFolderItems.length
+  });
+  
   if (state.folderId !== 'root' && state.folderId !== 'removed' && !getFolder(state.folderId)) {
     state.folderId = 'root';
   }
