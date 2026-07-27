@@ -4,21 +4,10 @@
   if (window.__gslVaultInjected) return;
   window.__gslVaultInjected = true;
 
-  /* SELF-SUFFICIENT: works even if shared.js isn't loaded first */
+  /* SELF-SUFFICIENT: uses shared.js */
   const shared = globalThis.CollectorShared || {};
-  const IMGRES_PREFIX = shared.IMGRES_PREFIX || 'https://www.google.com/imgres?q=';
-  const normalizeUrl = shared.normalizeUrl || ((raw) => {
-    try {
-      const u = new URL(raw);
-      u.searchParams.delete('ved');
-      u.searchParams.delete('vet');
-      u.hash = '';
-      const params = [...u.searchParams.entries()].sort(([a], [b]) => a.localeCompare(b));
-      return `${u.origin}${u.pathname}?${new URLSearchParams(params).toString()}`;
-    } catch {
-      return raw;
-    }
-  });
+  const IMGRES_PREFIX = shared.IMGRES_PREFIX;
+  const normalizeUrl = shared.normalizeUrl;
 
   const isGoogle = location.hostname.includes('google');
 

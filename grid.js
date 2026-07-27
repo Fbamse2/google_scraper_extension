@@ -11,7 +11,7 @@ const esc = (value) =>
   }[c]));
 
 const sharedLib = globalThis.CollectorShared || {};
-const deriveThumb = sharedLib.extractThumbnail || (() => null);
+const deriveThumb = sharedLib.extractThumbnail;
 const slugify = sharedLib.slugify;
 
 const NO_IMAGE = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(

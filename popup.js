@@ -3,10 +3,8 @@ const on = (id, ev, fn) => { const node = $(id); if (node) node.addEventListener
 const setText = (id, txt) => { const node = $(id); if (node) node.textContent = txt; };
 
 const sharedLib = globalThis.CollectorShared || {};
-const getVisibleItems =
-  sharedLib.getVisibleItems ||
-  ((items) => (Array.isArray(items) ? items : []).filter((i) => i && i.folder !== 'removed'));
-const isGifUrl = sharedLib.isGifUrl || ((u) => /\.gif(\?|#|$)/i.test(String(u || '')));
+const getVisibleItems = sharedLib.getVisibleItems;
+const isGifUrl = sharedLib.isGifUrl;
 
 const PLACEHOLDER_IMG = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70"><rect fill="#f1f3f4" width="70" height="70"/><text fill="#5f6368" x="50%" y="50%" text-anchor="middle" dy=".3em" font-size="10" font-family="sans-serif">No img</text></svg>'
