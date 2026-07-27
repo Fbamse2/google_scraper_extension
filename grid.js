@@ -1194,7 +1194,7 @@ function updateBreadcrumbs() {
       state.folderId = 'root';
       state.page = 1;
       state.selected.clear();
-      render();
+      loadData().then(() => render());
     }
   };
   bc.appendChild(rootCrumb);
@@ -1222,7 +1222,7 @@ function updateBreadcrumbs() {
         state.folderId = folder.id;
         state.page = 1;
         state.selected.clear();
-        render();
+        loadData().then(() => render());
       };
     }
     bc.appendChild(span);
@@ -1390,7 +1390,7 @@ function createFolderCard(folder) {
     state.folderId = folder.id;
     state.page = 1;
     state.selected.clear();
-    render();
+    loadData().then(() => render());
   });
 
   const menuBtn = div.querySelector('.item-menu-btn');
