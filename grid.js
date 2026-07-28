@@ -1450,6 +1450,7 @@ function createImageCard(item) {
     <img class="grid-item-image" src="${esc(imgSrc)}" loading="lazy">
     ${gif ? '<span class="gif-badge">GIF</span>' : ''}
     <div class="grid-item-info">
+      ${item.title ? `<div class="grid-item-title">${esc(item.title)}</div>` : ""}
       <div class="grid-item-url">${esc(item.url)}</div>
       <div class="grid-item-actions">
         <button class="open-img-btn">Open Image</button>
