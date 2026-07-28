@@ -127,9 +127,18 @@
       if (!a.href.startsWith(IMGRES_PREFIX)) return;
       if (filterTolns && !a.closest('[data-tolns]')) return;
       const n = normalizeUrl(a.href);
-      if (!found.has(n)) found.set(n, a.href);
+      if (!found.has(n)) {
+        /* extract title from parent tile */
+        const tile = a.closest(TILE_SELECTOR);
+        let title = '';
+        if (tile) {
+          const titleEl = tile.querySelector('.Q6A6Dc, [data-snippet], .VYhLad span');
+          if (titleEl) title = titleEl.textContent.trim();
+        }
+        found.set(n, { href: a.href, title });
+      }
     });
-    return [...found.values()];
+    return [...found.values()].map((v) => ({ url: v.href, title: v.title }));
   }
 
   /* generic mode: any page's images (min 150px, no svg/icons) */
@@ -156,8 +165,16 @@
     collecting = true;
     try {
       if (isGoogle) {
-        const urls = await scanGoogle();
-        try { await chrome.runtime.sendMessage({ type: 'save_urls', urls }); } catch {}
+        const results = await scanGoogle();
+        const urls = results.map((r) => r.url);
+        const titlesMap = new Map(results.map((r) => [r.url, r.title]));
+        try { 
+          await chrome.runtime.sendMessage({ 
+            type: 'save_urls', 
+            urls,
+            titles: Object.fromEntries(titlesMap)
+          }); 
+        } catch {}
       } else {
         const images = scanGeneric();
         if (images.length) {

@@ -141,6 +141,7 @@ function addItems(incoming, done) {
         url: entry.url,
         directImage: img,
         thumb: extractThumbnail(entry.url),
+        title: entry.title || '',
         isGif: img ? isGifUrl(img) : false,
         gifChecked: false,
         phash: null,
@@ -167,8 +168,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === 'save_urls') {
     const urls = (Array.isArray(msg.urls) ? msg.urls : [])
       .filter((u) => typeof u === 'string' && u.startsWith(IMGRES_PREFIX));
+    const titles = typeof msg.titles === 'object' && msg.titles ? msg.titles : {};
     if (!urls.length) { sendResponse({ saved: 0 }); return true; }
-    addItems(urls.map((u) => ({ url: u, directImage: extractDirectImage(u) })),
+    addItems(urls.map((u) => ({ 
+      url: u, 
+      directImage: extractDirectImage(u),
+      title: titles[u] || ''
+    })),
       (n) => sendResponse({ saved: n }));
     return true;
   }
